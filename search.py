@@ -12,7 +12,6 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and 
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
-
 """
 In search.py, you will implement generic search algorithms which are called
 by Pacman agents (in searchAgents.py).
@@ -63,7 +62,6 @@ class SearchProblem:
         """
         util.raiseNotDefined()
 
-
 def tinyMazeSearch(problem):
     """
     Returns a sequence of moves that solves tinyMaze.  For any other
@@ -88,8 +86,22 @@ def depthFirstSearch(problem):
     print "Is the start a goal?", problem.isGoalState(problem.getStartState())
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from code import interact # TO-DO: remove
+    start = problem.getStartState()
+    closed = set()
+    actions = {start: []}
+    S = [start]
+    while len(S) > 0:
+      node = S.pop()
+      if not (node in closed):
+        closed.add(node)
+        successors = problem.getSuccessors(node)
+        for (child, action, cost) in problem.getSuccessors(node):
+          if problem.isGoalState(child):
+            return actions[node] + [action]
+          elif not (child in closed):
+            actions[child] = actions[node] + [action]
+            S.append(child)
 
 def breadthFirstSearch(problem):
     """
@@ -114,7 +126,6 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     "Search the node that has the lowest combined cost and heuristic first."
     "*** YOUR CODE HERE ***"
     util.raiseNotDefined()
-
 
 # Abbreviations
 bfs = breadthFirstSearch
