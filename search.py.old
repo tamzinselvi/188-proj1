@@ -73,28 +73,39 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s,s,w,s,w,w,s,w]
 
-def getActions(state, start, end):
-  actions = []
-  node = end
-  while node in state and node != start:
-    actions.insert(0, state[node][1])
-    node = state[node][0]
+def generalStrategy(s, n, c):
+  s[c] = n
 
-  return actions
-
-def search(problem, Q, update=lambda l: l['child'] not in l['closed']):
+def search(problem, fringe, strategy=generalStrategy, update=lambda n,c: True):
   start = problem.getStartState()
   closed = set()
   state = {}
-  Q.push(start)
-  while not Q.isEmpty():
-    node = Q.pop()
-    closed.add(node)
-    if problem.isGoalState(node): return getActions(state, start, node)
-    for (child, action, cost) in problem.getSuccessors(node):
-      if update(locals()):
-        Q.push(child)
-        state[child] = (node, action)
+  fringe.push(start)
+  while not fringe.isEmpty():
+    node = fringe.pop()
+    if problem.isGoalState(node): return getPath(problem, state, node)
+    elif node not in closed:
+      closed.add(node)
+      for (child, action, cost) in problem.getSuccessors(node):
+        if update(node, child):
+          fringe.push(child)
+          strategy(state, child, node)
+
+def getPath(problem, state, goal):
+  path = []
+  print str(state)
+  node = goal
+  while node in state:
+    path += [node]
+    print node
+    node = state[node]
+
+  actions = []
+  node = path.pop()
+  while len(path) > 0:
+    match = path.pop()
+    for (child, action, _) in problem.getSuccessors(node): actions += [action]
+    node = match
 
 def depthFirstSearch(problem):
     """
@@ -111,15 +122,61 @@ def depthFirstSearch(problem):
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
     return search(problem, util.Stack())
+    """
+    start = problem.getStartState()
+    closed = set()
+    state = {start: []}
+    S = util.Stack()
+    S.push(start)
+    while not S.isEmpty():
+      root = S.pop()
+      if problem.isGoalState(root): return state[root]
+      elif not (root in closed):
+        closed.add(root)
+        for (child, action, cost) in problem.getSuccessors(root):
+          if child not in closed:
+            state[child] = state[root] + [action]
+            S.push(child)
+    """
 
 def breadthFirstSearch(problem):
     """
     Search the shallowest nodes in the search tree first.
     """
-    return search(problem, util.Queue(), lambda l: l['child'] not in l['closed'] and l['child'] not in l['state'])
+    """
+    start = problem.getStartState()
+    closed = set()
+    state = {start: []}
+    S = util.Queue()
+    S.push(start)
+    while not S.isEmpty():
+      root = S.pop()
+      if problem.isGoalState(root): return state[root]
+      elif root not in closed:
+        closed.add(root)
+        for (child, action, cost) in problem.getSuccessors(root):
+          if child not in closed and child not in S.list:
+            state[child] = state[root] + [action]
+            S.push(child)
+    """
 
 def uniformCostSearch(problem):
     "Search the node of least total cost first. "
+    start = problem.getStartState()
+    closed = set()
+    state = {start: ([], 0)}
+    S = util.PriorityQueue()
+    S.push(start, 0)
+    while not S.isEmpty():
+      root = S.pop()
+      if problem.isGoalState(root): return state[root][0]
+      elif root not in closed:
+        closed.add(root)
+        for (child, action, cost) in problem.getSuccessors(root):
+          if child not in closed and child not in S.list:
+            cost += state[root][1]
+            state[child] = (state[root][0] + [action], state[root][1])
+            S.push(child, cost)
 
 def nullHeuristic(state, problem=None):
     """
@@ -130,6 +187,22 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     "Search the node that has the lowest combined cost and heuristic first."
+    start = problem.getStartState()
+    queue = util.PriorityQueue()
+    closed = set()
+    startCost = heuristic(start, problem)
+    queue.push((start, startCost), startCost)
+    actions = {start: []}
+    while not queue.isEmpty():
+      state, rootCost = queue.pop()
+      closed.add(state)
+      for (child, action, cost) in  problem.getSuccessors(state):
+        if problem.isGoalState(state):
+          return actions[state] + [action]
+        if not child in closed:
+          totalCost = rootCost + cost + heuristic(child, problem)
+          queue.push((child, totalCost), totalCost)
+          actions[child] = actions[state] + [action]
 
 # Abbreviations
 bfs = breadthFirstSearch
