@@ -41,6 +41,8 @@ from game import Actions
 import util
 import time
 import search
+import math
+import code
 
 class GoWestAgent(Agent):
     "An agent that goes West until it can't."
@@ -354,14 +356,11 @@ def cornersHeuristic(state, problem):
     """
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
-    if problem.isGoalState(state):
-      return 0
-    distances = []
+    distance = 0
     for i in range(len(corners)):
       if not state[1][i]: 
-        distance = abs(state[0][0] - corners[i][0]) + abs(state[0][1] - corners[i][1]) 
-        distances.append(distance)
-    return max(distances)
+        distance = max(distance, abs(state[0][0] - corners[i][0]) + abs(state[0][1] - corners[i][1]))
+    return distance
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -451,8 +450,9 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    largest = 0
+    for food in foodGrid.asList(): largest = max(largest, mazeDistance(food, position, problem.startingGameState)) 
+    return largest
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -478,9 +478,9 @@ class ClosestDotSearchAgent(SearchAgent):
         food = gameState.getFood()
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return search.aStarSearch(problem)
+        
+        
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -513,14 +513,21 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         The state is Pacman's position. Fill this in with a goal test
         that will complete the problem definition.
         """
-        x,y = state
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
+        return self.food[state[0]][state[1]] 
+        
 ##################
 # Mini-contest 1 #
 ##################
+
+from functools import wraps
+def memo(func):
+    cache = {}
+    @ wraps(func)
+    def wrap(*args):
+        if args not in cache:
+            cache[args] = func(*args)
+        return cache[args]
+    return wrap
 
 class ApproximateSearchAgent(Agent):
     "Implement your contest entry here.  Change anything but the class name."
@@ -537,7 +544,7 @@ class ApproximateSearchAgent(Agent):
         """
         "*** YOUR CODE HERE ***"
         util.raiseNotDefined()
-
+@memo
 def mazeDistance(point1, point2, gameState):
     """
     Returns the maze distance between any two points, using the search functions
