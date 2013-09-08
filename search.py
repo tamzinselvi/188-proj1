@@ -82,19 +82,25 @@ def getActions(state, start, end):
 
   return actions
 
-def search(problem, Q, update=lambda l: l['child'] not in l['closed']):
+def search(problem, Q, update=lambda l: l['child'] not in l['closed'], enqueue=lambda l, node, cost: l['Q'].push((node, cost)),
+    costMetric=lambda l, node, rootCost: 0):
   start = problem.getStartState()
   closed = set()
   state = {}
-  Q.push(start)
+  cost = 0
+  enqueue(locals(), start, costMetric(locals(), start, 0))
   while not Q.isEmpty():
-    node = Q.pop()
-    closed.add(node)
-    if problem.isGoalState(node): return getActions(state, start, node)
-    for (child, action, cost) in problem.getSuccessors(node):
-      if update(locals()):
-        Q.push(child)
-        state[child] = (node, action)
+    node, rootCost = Q.pop()
+    if not node in closed:
+      closed.add(node)
+     # print "Dequeueing: " + str((node, rootCost))
+      if problem.isGoalState(node): return getActions(state, start, node)
+      for (child, action, cost) in problem.getSuccessors(node):
+        totalCost = costMetric(locals(), child, rootCost)
+        if update(locals()):
+          enqueue(locals(), child, totalCost)
+      #    print "Queuing: " + str( (child, totalCost)) + "with cost " + str(cost)
+          state[child] = (node, action, totalCost)
 
 def depthFirstSearch(problem):
     """
@@ -120,6 +126,8 @@ def breadthFirstSearch(problem):
 
 def uniformCostSearch(problem):
     "Search the node of least total cost first. "
+    return search(problem, util.PriorityQueue(), lambda l: l['child'] not in l['closed'] and l['child'] not in l['state'] or ( l['child'] in l['state'] and l['totalCost'] < l['state'][l['child']][2]),
+        enqueue=lambda l, node, cost: l['Q'].push((node, cost), cost), costMetric=lambda l, node, rootCost: rootCost + l['cost'])
 
 def nullHeuristic(state, problem=None):
     """
@@ -130,6 +138,8 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     "Search the node that has the lowest combined cost and heuristic first."
+    return search(problem, util.PriorityQueue(), lambda l: l['child'] not in l['closed'] and l['child'] not in l['state'] or ( l['child'] in l['state'] and l['totalCost'] < l['state'][l['child']][2]),
+        enqueue=lambda l, node, cost: l['Q'].push((node, cost - heuristic(node, l['problem'])), cost), costMetric=lambda l, node, rootCost: rootCost + l['cost'] + heuristic(node, l['problem']))
 
 # Abbreviations
 bfs = breadthFirstSearch
