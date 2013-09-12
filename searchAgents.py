@@ -12,7 +12,6 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and 
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
-
 """
 This file contains all of the agents that can be selected to
 control Pacman.  To select an agent, use the '-p' option
@@ -69,7 +68,6 @@ class SearchAgent(Agent):
     Options for fn include:
       depthFirstSearch or dfs
       breadthFirstSearch or bfs
-
 
     Note: You should NOT change any code in SearchAgent
     """
@@ -307,7 +305,7 @@ class CornersProblem(search.SearchProblem):
         """
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            x,y = state[0] 
+            x,y = state[0]
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
             hitsWall = self.walls[nextx][nexty]
@@ -340,7 +338,6 @@ class CornersProblem(search.SearchProblem):
             if self.walls[x][y]: return 999999
         return len(actions)
 
-
 def cornersHeuristic(state, problem):
     """
     A heuristic for the CornersProblem that you defined.
@@ -358,7 +355,7 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
     distance = 0
     for i in range(len(corners)):
-      if not state[1][i]: 
+      if not state[1][i]:
         distance = max(distance, abs(state[0][0] - corners[i][0]) + abs(state[0][1] - corners[i][1]))
     return distance
 
@@ -451,7 +448,7 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     largest = 0
-    for food in foodGrid.asList(): largest = max(largest, mazeDistance(food, position, problem.startingGameState)) 
+    for food in foodGrid.asList(): largest = max(largest, mazeDistance(food, position, problem.startingGameState))
     return largest
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -479,8 +476,6 @@ class ClosestDotSearchAgent(SearchAgent):
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
         return search.aStarSearch(problem)
-        
-        
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -513,8 +508,8 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         The state is Pacman's position. Fill this in with a goal test
         that will complete the problem definition.
         """
-        return self.food[state[0]][state[1]] 
-        
+        return self.food[state[0]][state[1]]
+
 ##################
 # Mini-contest 1 #
 ##################
@@ -532,8 +527,49 @@ def memo(func):
 class ApproximateSearchAgent(Agent):
     "Implement your contest entry here.  Change anything but the class name."
 
+    def __init__(self):
+        self.actions = []
+
+    def drawSquare(self, pos, color='red'):
+        import graphicsUtils
+        def getColor(c):
+            colors = {
+                'red' : '#ff0000',
+                'yellow' : '#ffff00'
+            }
+            if c in colors: return colors[c]
+            else: return c
+        color = getColor(color)
+        graphicsUtils.square((pos[0]*15 + 14, 15*(14-pos[1]) + 14), 7.5, color)
+
+    def getNodeType(self, state, pos):
+      walls = state.getWalls()
+      food = state.getFood()
+      paths = 0
+      if not food[pos[0]][pos[1]]: return -1
+      for i in [-1, 1]:
+        for j in [-1, 1]:
+          if pos[0]+i >= 0 and pos[1]+j >= 0 and not walls[pos[0]+i][pos[1]+j] and not walls[pos[0]][pos[1]+j] and not walls[pos[0]+i][pos[1]]:
+            return 2
+      for i in [-1, 1]:
+        if pos[0]+i >= 0 and pos[0]+i < walls.width: paths += not walls[pos[0]+i][pos[1]]
+        if pos[1]+i >= 0 and pos[1]+i < walls.height: paths += not walls[pos[0]][pos[1]+i]
+
+      if paths >= 3: return 1
+      return 0
+
     def registerInitialState(self, state):
         "This method is called before any moves are made."
+        walls = state.getWalls()
+        for x in range(walls.width):
+          for y in range(walls.height):
+            if not walls[x][y]:
+              nodeType = self.getNodeType(state, (x,y))
+              if nodeType == 1: self.drawSquare((x,y), '#00ff00')
+              elif nodeType == 2: self.drawSquare((x,y), 'yellow')
+              elif nodeType == -1: self.drawSquare((x,y))
+              else: self.drawSquare((x,y), '#ffffff')
+        code.interact(local=locals())
         "*** YOUR CODE HERE ***"
 
     def getAction(self, state):
@@ -543,7 +579,7 @@ class ApproximateSearchAgent(Agent):
         Directions.{North, South, East, West, Stop}
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return self.actions.pop(0)
 @memo
 def mazeDistance(point1, point2, gameState):
     """

@@ -12,7 +12,6 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and 
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
-
 import sys
 import math
 import random
@@ -196,7 +195,6 @@ def image(pos, file="../../blueghost.gif"):
     x, y = pos
     # img = PhotoImage(file=file)
     return _canvas.create_image(x, y, image = Tkinter.PhotoImage(file=file), anchor = Tkinter.NW)
-
 
 def refresh():
     _canvas.update_idletasks()

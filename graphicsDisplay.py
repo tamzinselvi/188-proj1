@@ -12,7 +12,6 @@
 # Student side autograding was added by Brad Miller, Nick Hay, and 
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
-
 from graphicsUtils import *
 import math, time
 from game import Directions
@@ -151,7 +150,6 @@ class InfoPane:
 
     def clearMessage(self):
         pass
-
 
 class PacmanGraphics:
     def __init__(self, zoom=1.0, frameTime=0.0, capture=False):
@@ -586,7 +584,6 @@ class PacmanGraphics:
             for cell in self.expandedCells:
                 remove_from_screen(cell)
 
-
     def updateDistributions(self, distributions):
         "Draws an agent's belief distributions"
         # copy all distributions so we don't change their state
@@ -657,7 +654,6 @@ class FirstPersonPacmanGraphics(PacmanGraphics):
 
 def add(x, y):
     return (x[0] + y[0], x[1] + y[1])
-
 
 # Saving graphical output
 # -----------------------
