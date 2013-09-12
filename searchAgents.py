@@ -538,6 +538,13 @@ class PairDict:
     else:
       self.dictionary[k1] = {k2 : v}
 
+  def getValue(self, k1, k2):
+    if self.hasValue(k1, k2):
+      if k1 in self.dictionary and k2 in self.dictionary[k1]: return self.dictionary[k1][k2]
+      return self.dictionary[k2][k1]
+
+    return None
+
   def hasValue(self, k1, k2):
     return (k1 in self.dictionary and k2 in self.dictionary[k1]) or (k2 in self.dictionary and k1 in self.dictionary[k2])
 
@@ -556,11 +563,11 @@ class ApproximateSearchAgent(Agent):
       import graphicsUtils
       def getColor(c):
         colors = {
-            -1 : '#ff0000',
-            0 : '#ffffff',
-            1 : '#00ff00',
-            2 : '#ffff00'
-            }
+          -1 : '#ff0000',
+          0 : '#ffffff',
+          1 : '#00ff00',
+          2 : '#ffff00'
+        }
         if c in colors: return colors[c]
         else: return c
       color = getColor(color)
@@ -570,6 +577,7 @@ class ApproximateSearchAgent(Agent):
       walls = self.walls
       food = self.food
       paths = 0
+      x, y = pos
       if not self.isValid((pos[0],pos[1])): return -1
       elif self.state.getPacmanPosition() == pos: return 1
       for i in [-1, 1]:
@@ -586,46 +594,67 @@ class ApproximateSearchAgent(Agent):
 
     def registerInitialState(self, state):
       "Setup initial state"
+      self.actions = []
       self.state = state
       self.food = state.getFood()
       self.walls = state.getWalls()
-      self.visited = set()
+      self.linksVisited = set()
+      self.blocksVisited = set()
       self.paths = PairDict() # key: (to, from)
       self.length = 0
 
       "DFS to generate new graph"
       pos = state.getPacmanPosition()
-      self.findLinks(pos, pos)
+      self.findLinks(pos, pos, set(), ((),()))
 
       code.interact(local=locals())
 
-    def findLinks(self, parent, pos):
-      nodeType = self.getNodeType(pos)
-      if nodeType == 1 and pos != parent:
-        if self.paths.hasValue(parent, pos): return
-        self.paths.setValue(parent, pos, self.length - 1)
-        parent = pos
-        self.length = 0
-
-      if pos not in self.visited and self.isValid(pos):
+    def findLinks(self, parent, pos, seen, actions):
+      if self.isValid(pos):
+        nodeType = self.getNodeType(pos)
+        x, y = pos
+        if nodeType == 1 and pos != parent:
+          if self.paths.hasValue(parent, pos): return
+          if not self.paths.hasValue(parent, pos): self.paths.setValue(parent, pos, {parent: actions[1], pos: actions[0]})
+          if pos in self.linksVisited: return
+          parent = pos
+          actions = ((), ())
+          seen = set()
+          self.linksVisited.add(pos)
+        elif nodeType == 2:
+          if pos in self.blocksVisited: return
+          self.blocksVisited.add(pos)
         self.drawSquare(pos, nodeType)
-        self.visited.add(pos)
-        length = self.length + 1
 
         for i in [-1, 1]:
-          self.length = length
-          if pos[0]+i >= 0 and pos[0]+i < self.walls.width: self.findLinks(parent, (pos[0]+i, pos[1]))
-          self.length = length
-          if pos[1]+i >= 0 and pos[1]+i < self.walls.height: self.findLinks(parent, (pos[0], pos[1]+i))
+          x1 = pos[0]+i
+          y1 = pos[1]+i
+          seen.add(pos)
+          if self.isValid((x1, y)) and (x1, y) not in seen:
+            nextActions = self.getDirections(pos, (x1, y))
+            self.findLinks(parent, (x1, y), seen, (actions[0] + (nextActions[0],), actions[1] + (nextActions[1],)))
+          if self.isValid((x, y1)) and (x, y1) not in seen:
+            nextActions = self.getDirections(pos, (x, y1))
+            self.findLinks(parent, (x, y1), seen, (actions[0] + (nextActions[0],), actions[1] + (nextActions[1],)))
+
+    def getDirections(self, start, end):
+      x1, y1 = start
+      x2, y2 = end
+      displacement = (x1 - x2, y1 - y2)
+      if displacement == (1, 0): return (Directions.EAST, Directions.WEST)
+      elif displacement == (-1, 0): return (Directions.WEST, Directions.EAST)
+      elif displacement == (0, 1): return (Directions.NORTH, Directions.SOUTH)
+      elif displacement == (0, -1): return (Directions.SOUTH, Directions.NORTH)
+      else: raise Exception('Invalid positions given for getDirections')
 
     def getAction(self, state):
-        """
-        From game.py:
-        The Agent will receive a GameState and must return an action from
-        Directions.{North, South, East, West, Stop}
-        """
-        "*** YOUR CODE HERE ***"
-        return self.actions.pop(0)
+      """
+      From game.py:
+      The Agent will receive a GameState and must return an action from
+      Directions.{North, South, East, West, Stop}
+      """
+      "*** YOUR CODE HERE ***"
+      return self.actions.pop(0)
 
 @memo
 def mazeDistance(point1, point2, gameState):
