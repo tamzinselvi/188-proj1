@@ -524,98 +524,60 @@ def memo(func):
         return cache[args]
     return wrap
 
-class PairDict:
-  def __init__(self):
-    self.dictionary = {}
-
-  def setValue(self, k1, k2, v):
-    if k1 not in self.dictionary and k2 not in self.dictionary:
-      self.dictionary[k1] = {k2: v}
-    elif k1 in self.dictionary and k2 in self.dictionary[k1]:
-      self.dictionary[k1][k2] = v
-    elif k2 in self.dictionary and k1 in self.dictionary[k2]:
-      self.dictionary[k2][k1] = v
-    else:
-      self.dictionary[k1] = {k2 : v}
-
-  def hasValue(self, k1, k2):
-    return (k1 in self.dictionary and k2 in self.dictionary[k1]) or (k2 in self.dictionary and k1 in self.dictionary[k2])
-
-  def __str__(self):
-    ret = ''
-    for k1 in self.dictionary:
-      for k2 in self.dictionary[k1]:
-        if k1 < k2: ret = ret + str(k1) + ' <-> ' + str(k2) + ' : ' + str(self.dictionary[k1][k2]) + '\n'
-        else: ret = ret + str(k2) + ' <-> ' + str(k1) + ' : ' + str(self.dictionary[k1][k2]) + '\n'
-    return ret
-
 class ApproximateSearchAgent(Agent):
     "Implement your contest entry here.  Change anything but the class name."
 
+    def __init__(self):
+        self.actions = []
+
     def drawSquare(self, pos, color='red'):
-      import graphicsUtils
-      def getColor(c):
-        colors = {
-            -1 : '#ff0000',
-            0 : '#ffffff',
-            1 : '#00ff00',
-            2 : '#ffff00'
+        import graphicsUtils
+        def getColor(c):
+            colors = {
+                'red' : '#ff0000',
+                'yellow' : '#ffff00'
             }
-        if c in colors: return colors[c]
-        else: return c
-      color = getColor(color)
-      graphicsUtils.square((pos[0]*15 + 14, 15*(14-pos[1]) + 14), 7.5, color)
+            if c in colors: return colors[c]
+            else: return c
+        color = getColor(color)
+        graphicsUtils.square((pos[0]*15 + 14, 15*(14-pos[1]) + 14), 7.5, color)
+
+    def isValidNode(self, pos):
+      state = self.state
+      walls = state.getWalls()
+      food = state.getFood()
 
     def getNodeType(self, pos):
-      walls = self.walls
-      food = self.food
+      state = self.state
+      walls = state.getWalls()
+      food = state.getFood()
       paths = 0
-      if not self.isValid((pos[0],pos[1])): return -1
-      elif self.state.getPacmanPosition() == pos: return 1
+      if not food[pos[0]][pos[1]]: return -1
       for i in [-1, 1]:
-        if self.isValid((pos[0]+i,pos[1])): paths += 1
-        if self.isValid((pos[0],pos[1]+i)): paths += 1
         for j in [-1, 1]:
-          if self.isValid((pos[0],pos[1]+j)) and self.isValid((pos[0]+i,pos[1])) and self.isValid((pos[0]+i,pos[1]+j)): return 2
+          if pos[0]+i >= 0 and pos[1]+j >= 0 and not walls[pos[0]+i][pos[1]+j] and not walls[pos[0]][pos[1]+j] and not walls[pos[0]+i][pos[1]]:
+            return 2
+      for i in [-1, 1]:
+        if pos[0]+i >= 0 and pos[0]+i < walls.width: paths += not walls[pos[0]+i][pos[1]]
+        if pos[1]+i >= 0 and pos[1]+i < walls.height: paths += not walls[pos[0]][pos[1]+i]
 
-      if paths >= 3 and paths <= 4: return 1
+      if paths >= 3: return 1
       return 0
 
-    def isValid(self, pos):
-      return (pos[0] >= 0 and pos[1] >= 0 and pos[0] < self.walls.width and pos[1] < self.walls.height) and (not self.walls[pos[0]][pos[1]] and self.food[pos[0]][pos[1]]) or pos == self.state.getPacmanPosition()
-
     def registerInitialState(self, state):
-      "Setup initial state"
-      self.state = state
-      self.food = state.getFood()
-      self.walls = state.getWalls()
-      self.visited = set()
-      self.paths = PairDict() # key: (to, from)
-      self.length = 0
-
-      "DFS to generate new graph"
-      pos = state.getPacmanPosition()
-      self.findLinks(pos, pos)
-
-      code.interact(local=locals())
-
-    def findLinks(self, parent, pos):
-      nodeType = self.getNodeType(pos)
-      if nodeType == 1 and pos != parent:
-        if self.paths.hasValue(parent, pos): return
-        self.paths.setValue(parent, pos, self.length - 1)
-        parent = pos
-        self.length = 0
-
-      if pos not in self.visited and self.isValid(pos):
-        self.visited.add(pos)
-        length = self.length + 1
-
-        for i in [-1, 1]:
-          self.length = length
-          if pos[0]+i >= 0 and pos[0]+i < self.walls.width: self.findLinks(parent, (pos[0]+i, pos[1]))
-          self.length = length
-          if pos[1]+i >= 0 and pos[1]+i < self.walls.height: self.findLinks(parent, (pos[0], pos[1]+i))
+        "This method is called before any moves are made."
+        self.state = state
+        walls = state.getWalls()
+        for x in range(walls.width):
+          for y in range(walls.height):
+            if not walls[x][y]:
+              nodeType = self.getNodeType((x,y))
+              if nodeType == 1: self.drawSquare((x,y), '#00ff00')
+              elif nodeType == 2: self.drawSquare((x,y), 'yellow')
+              elif nodeType == -1: self.drawSquare((x,y))
+              else: self.drawSquare((x,y), '#ffffff')
+        code.interact(local=locals())
+        "*** YOUR CODE HERE ***"
 
     def getAction(self, state):
         """
@@ -625,7 +587,6 @@ class ApproximateSearchAgent(Agent):
         """
         "*** YOUR CODE HERE ***"
         return self.actions.pop(0)
-
 @memo
 def mazeDistance(point1, point2, gameState):
     """
