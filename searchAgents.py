@@ -608,6 +608,7 @@ class ApproximateSearchAgent(Agent):
         self.length = 0
 
       if pos not in self.visited and self.isValid(pos):
+        self.drawSquare(pos, nodeType)
         self.visited.add(pos)
         length = self.length + 1
 
