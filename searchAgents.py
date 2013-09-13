@@ -524,6 +524,50 @@ def memo(func):
         return cache[args]
     return wrap
 
+class Vertex:
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+    self.edges = []
+  def getCoord(self):
+    return (self.x, self.y)
+  def getEdges(self):
+    return self.edges
+  def __str__(self):
+    return str(self.getCoord())
+  def __repr__(self):
+    return str(self.getCoord())
+
+class Edge:
+  def __init__(self, v1, v2, actions):
+    self.u = v1
+    self.v = v2
+    self.actions = actions
+  def __repr__(self):
+    return str(self.u) + '->' + str(self.v)
+
+import itertools
+class Graph:
+  def __init__(self):
+    self.vertices = {}
+    self.edges = {}
+  def add(self, k1, k2, actions):
+    if k1 not in self.vertices:
+      self.vertices[k1] = Vertex(k1[0], k1[1])
+    if k2 not in self.vertices:
+      self.vertices[k2] = Vertex(k2[0], k2[1])
+    if k1 not in self.edges:
+      self.edges[k1] = {}
+    if k2 not in self.edges:
+      self.edges[k2] = {}
+    self.edges[k1][k2] = self.edges[k2][k1] = Edge(self.vertices[k1], self.vertices[k2], actions)
+    self.vertices[k1].edges.append(self.edges[k1][k2])
+    self.vertices[k2].edges.append(self.edges[k1][k2])
+  def edgeExists(self, k1, k2):
+    return k1 in self.edges and k2 in self.edges[k1]
+  def getEdges(self):
+    return set(itertools.chain(*[ self.edges[v].values() for v in self.edges ])) 
+      
 class PairDict:
   def __init__(self):
     self.dictionary = {}
@@ -612,6 +656,7 @@ class ApproximateSearchAgent(Agent):
       self.walls = state.getWalls()
       self.linksVisited = set()
       self.blocksVisited = set()
+      self.graph = Graph()
       self.paths = PairDict() # key: (to, from)
       self.length = 0
 
@@ -626,8 +671,8 @@ class ApproximateSearchAgent(Agent):
         nodeType = self.getNodeType(pos)
         x, y = pos
         if nodeType == 1 and pos != parent:
-          if self.paths.hasValue(parent, pos): return
-          if not self.paths.hasValue(parent, pos): self.paths.setValue(parent, pos, {parent: actions[1], pos: actions[0]})
+          if self.graph.edgeExists(parent, pos): return
+          if not self.graph.edgeExists(parent, pos): self.graph.add(parent, pos, {parent: actions[1], pos: actions[0]})
           if pos in self.linksVisited: return
           parent = pos
           actions = ((), ())
