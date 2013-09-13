@@ -531,12 +531,12 @@ class PairDict:
   def setValue(self, k1, k2, v):
     if k1 not in self.dictionary and k2 not in self.dictionary:
       self.dictionary[k1] = {k2: v}
-    elif k1 in self.dictionary and k2 in self.dictionary[k1]:
+    elif k1 in self.dictionary and k2 not in self.dictionary[k1]:
       self.dictionary[k1][k2] = v
-    elif k2 in self.dictionary and k1 in self.dictionary[k2]:
+    elif k2 in self.dictionary and k1 not in self.dictionary[k2]:
       self.dictionary[k2][k1] = v
     else:
-      self.dictionary[k1] = {k2 : v}
+      pass #both in dict already
 
   def getValue(self, k1, k2):
     if self.hasValue(k1, k2):
@@ -544,6 +544,18 @@ class PairDict:
       return self.dictionary[k2][k1]
 
     return None
+  
+  def getNeighbors(self, k):
+    ret = []
+    for k1 in self.dictionary:
+      if k1 == k:
+        ret += list(self.dictionary[k1].keys())
+        continue
+      for k2 in self.dictionary[k1]:
+        if k2 == k:
+          ret.append(k1)
+          break
+    return ret
 
   def hasValue(self, k1, k2):
     return (k1 in self.dictionary and k2 in self.dictionary[k1]) or (k2 in self.dictionary and k1 in self.dictionary[k2])
@@ -584,9 +596,9 @@ class ApproximateSearchAgent(Agent):
         if self.isValid((pos[0]+i,pos[1])): paths += 1
         if self.isValid((pos[0],pos[1]+i)): paths += 1
         for j in [-1, 1]:
-          if self.isValid((pos[0],pos[1]+j)) and self.isValid((pos[0]+i,pos[1])) and self.isValid((pos[0]+i,pos[1]+j)): return 2
+          if self.isValid((pos[0],pos[1]+j)) and self.isValid((pos[0]+i,pos[1])) and self.isValid((pos[0]+i,pos[1]+j)): return 1
 
-      if paths >= 3 and paths <= 4: return 1
+      if (paths >= 3 and paths <= 4) or paths == 1: return 1
       return 0
 
     def isValid(self, pos):
@@ -626,14 +638,17 @@ class ApproximateSearchAgent(Agent):
           self.blocksVisited.add(pos)
         self.drawSquare(pos, nodeType)
 
+       # if  pos == (2,2):
+          #import pdb; pdb.set_trace()
         for i in [-1, 1]:
           x1 = pos[0]+i
           y1 = pos[1]+i
           seen.add(pos)
-          if self.isValid((x1, y)) and (x1, y) not in seen:
+
+          if self.isValid((x1, y)) and (self.getNodeType((x1,y)) == 1 or (x1, y) not in seen):
             nextActions = self.getDirections(pos, (x1, y))
             self.findLinks(parent, (x1, y), seen, (actions[0] + (nextActions[0],), actions[1] + (nextActions[1],)))
-          if self.isValid((x, y1)) and (x, y1) not in seen:
+          if self.isValid((x, y1)) and (self.getNodeType((x,y1)) == 1 or (x, y1) not in seen):
             nextActions = self.getDirections(pos, (x, y1))
             self.findLinks(parent, (x, y1), seen, (actions[0] + (nextActions[0],), actions[1] + (nextActions[1],)))
 
