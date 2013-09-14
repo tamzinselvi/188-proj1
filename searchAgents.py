@@ -534,9 +534,13 @@ class Vertex:
   def getEdges(self):
     return self.edges
   def __str__(self):
-    return str(self.getCoord())
+    return "Vertex"+ str(self.getCoord())
   def __repr__(self):
-    return str(self.getCoord())
+    return "Vertex"+str(self.getCoord())
+  def __eq__(self, other):
+    return self.getCoord() == other.getCoord()
+  def __hash__(self):
+    return hash(self.getCoord())
 
 class Edge:
   def __init__(self, v1, v2, actions):
@@ -545,6 +549,11 @@ class Edge:
     self.actions = actions
   def __repr__(self):
     return str(self.u) + '->' + str(self.v)
+  def dest(self, origin):
+    if self.u == origin: return self.v
+    return self.u
+  def __len__(self):
+    return max([ len(action) for action in self.actions.values()])
 
 import itertools
 class Graph:
@@ -567,7 +576,40 @@ class Graph:
     return k1 in self.edges and k2 in self.edges[k1]
   def getEdges(self):
     return set(itertools.chain(*[ self.edges[v].values() for v in self.edges ])) 
-      
+  def getVertices(self):
+    return self.vertices
+  def getVertex(self, pos):
+    return self.vertices[pos]
+
+class MinPathCover:
+  def __init__(self, graph):
+    self.graph = graph
+  def closestUnvisited(self, v, visited, k=3):
+    closest = {} 
+    root = v
+    Q = util.PriorityQueue()
+    Q.push((root, []), 0)
+    while not Q.isEmpty() and len(visited) < len(self.graph.getVertices()) and len(closest) < k:
+      current, actions = Q.pop()
+      if (current not in visited) and (current not in closest): 
+        closest[current] = actions
+      for e in current.getEdges():
+        newCost = len(actions) + len(e)
+        Q.push((e.dest(current), actions + [e]), newCost)
+    return closest
+
+  def path(self, start, visited = [], edges = []):
+    visited += [start]
+    options  = []
+    if len(visited) == len(self.graph.getVertices()):
+      print(visited)
+    for v,actions in self.closestUnvisited(start, visited).iteritems():
+      options += self.path(v, visited, edges + actions)
+    code.interact(local=locals())
+    return min(options, key=lambda actions: reduce( lambda x, y: x + len(y), actions))
+
+
+
 class PairDict:
   def __init__(self):
     self.dictionary = {}
@@ -659,11 +701,11 @@ class ApproximateSearchAgent(Agent):
       self.graph = Graph()
       self.paths = PairDict() # key: (to, from)
       self.length = 0
-
+      self.p = MinPathCover(self.graph)
       "DFS to generate new graph"
       pos = state.getPacmanPosition()
       self.findLinks(pos, pos, set(), ((),()))
-
+      v = self.graph.getVertex(pos)
       code.interact(local=locals())
 
     def findLinks(self, parent, pos, seen, actions):
